@@ -1,6 +1,9 @@
 package com.smart;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.ArrayList;
+import java.util.List;
+
 public class Elevator {
     int id;
     double velocity;
@@ -12,6 +15,8 @@ public class Elevator {
 
     Queue<Integer> targetFloors;
 
+    List<Integer> assignedFloorCalls;
+
     public Elevator(int id, double velocity, double acceleration, int currentFloor) {
         this.id = id;
         this.velocity = velocity;
@@ -21,11 +26,51 @@ public class Elevator {
         this.movingDown = false;
         this.busy = false;
         this.targetFloors = new LinkedList<>();
+        this.assignedFloorCalls = new ArrayList<>();
     }
 
     public void addTargetFloor(int floor) {
-        if (!targetFloors.contains(floor)) {
-            targetFloors.offer(floor);
+        if (!targetFloors.contains(floor) && !assignedFloorCalls.contains(floor)) {
+            boolean added = false;
+
+            if (movingUp) {
+                Queue<Integer> newQueue = new LinkedList<>();
+                Queue<Integer> downCallQueue = new LinkedList<>();
+
+                for (Integer existingFloor : targetFloors) {
+                    if (!added && floor > currentFloor && floor < existingFloor) {
+                        newQueue.offer(floor);
+                        added = true;
+                    }
+                    newQueue.offer(existingFloor);
+                }
+
+                if (!added) {
+                    newQueue.offer(floor);
+                }
+
+                targetFloors = newQueue;
+            } else if (movingDown) {
+                Queue<Integer> newQueue = new LinkedList<>();
+
+                for (Integer existingFloor : targetFloors) {
+                    if (!added && floor < currentFloor && floor > existingFloor) {
+                        newQueue.offer(floor);
+                        added = true;
+                    }
+                    newQueue.offer(existingFloor);
+                }
+
+                if (!added) {
+                    newQueue.offer(floor);
+                }
+
+                targetFloors = newQueue;
+            } else {
+                targetFloors.offer(floor);
+            }
+
+            assignedFloorCalls.add(floor);
             busy = true;
             updateDirection();
         }
@@ -44,6 +89,8 @@ public class Elevator {
         if (currentFloor == target) {
             System.out.println("Elevator " + id + " arrived at floor " + currentFloor);
             targetFloors.poll();
+            assignedFloorCalls.remove(Integer.valueOf(currentFloor));
+
             if (targetFloors.isEmpty()) {
                 busy = false;
                 movingUp = false;
@@ -80,4 +127,22 @@ public class Elevator {
         }
     }
 
+    public boolean canPickup(int floorNumber, boolean goingUp) {
+        if (!busy) return true;
+
+        if (movingUp) {
+            if (goingUp && floorNumber > currentFloor &&
+                    (targetFloors.isEmpty() || floorNumber < targetFloors.peek())) {
+                return true;
+            }
+        }
+        if (movingDown) {
+            if (!goingUp && floorNumber < currentFloor &&
+                    (targetFloors.isEmpty() || floorNumber > targetFloors.peek())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
