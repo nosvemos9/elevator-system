@@ -3,15 +3,13 @@ package com.smart;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ElevatorSystem {
     List<Elevator> elevators;
     List<Floor> floors;
 
-    // Bekleyen çağrılar (hedefte uygun asansör yoksa burada tutulur)
     public List<CallRequest> pendingCalls = new ArrayList<>();
-
-    // Yeni: geçmiş çağrılar veri havuzu
     public List<CallLog> callLogs = new ArrayList<>();
 
     public ElevatorSystem(List<Elevator> elevators, List<Floor> floors) {
@@ -24,7 +22,7 @@ public class ElevatorSystem {
         if (goingUp) floor.setCallUp(true);
         else floor.setCallDown(true);
 
-        // 🔴 Çağrı kaydı (veri havuzuna eklendi)
+        // Log kaydı
         callLogs.add(new CallLog(floorNumber, goingUp, LocalDateTime.now()));
 
         Elevator nearestElevator = findNearestAvailableElevator(floorNumber, goingUp);
@@ -74,9 +72,41 @@ public class ElevatorSystem {
             Elevator e = findNearestAvailableElevator(req.floorNumber, req.goingUp);
             if (e != null) {
                 e.addTargetFloor(req.floorNumber);
+                req.markServed();
+
+                // Konsola log
+                System.out.println("[LOG] Floor " + req.floorNumber + " waited " + req.getWaitSeconds() + " seconds.");
+
+                // CSV'ye yaz
+                LoggerUtil.logToCSV(req);
+
                 served.add(req);
             }
         }
+
         pendingCalls.removeAll(served);
+    }
+
+
+
+    // 🆕 ANALİZ BAZLI: Müsait asansörü yoğun kata gönder
+    public void sendIdleElevatorToFloor(int floor) {
+        Elevator bestIdle = null;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (Elevator elevator : elevators) {
+            if (elevator.state == ElevatorState.IDLE) {
+                int distance = Math.abs(elevator.currentFloor - floor);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestIdle = elevator;
+                }
+            }
+        }
+
+        if (bestIdle != null) {
+            bestIdle.addTargetFloor(floor);
+            System.out.println("Predicted traffic: Elevator " + bestIdle.id + " prepositioned to floor " + floor);
+        }
     }
 }
