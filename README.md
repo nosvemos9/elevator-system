@@ -9,7 +9,6 @@ This is a simulation of a basic elevator control algorithm written in Java. It d
 
 ## Technologies
 - Java
-- Python
 
 ## Future Improvements
 - Add GUI interface
