@@ -27,3 +27,23 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+target/
+.idea/
+*.iml
+call_logs.csv
+# Maven
+/target/
+/out/
+
+# IDE
+.idea/
+*.iml
+
+# Logs & DB
+/logs/
+/data/*.db
+*.csv
+
+# OS
+.DS_Store
